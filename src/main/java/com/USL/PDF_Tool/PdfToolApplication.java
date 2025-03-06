@@ -1,12 +1,28 @@
 package com.USL.PDF_Tool;
 
 import net.sourceforge.tess4j.*;
+import org.opencv.core.Core;
+import org.opencv.core.Mat;
+import org.opencv.imgcodecs.Imgcodecs;
+import org.opencv.highgui.HighGui;
 
 import java.io.File;
 
 public class PdfToolApplication {
 	public static void main(String[] args) {
+		// Load OpenCV library
+		System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
+
 		String imagePath = "C:\\Users\\Dev Mode\\IdeaProjects\\PDF_Tool\\src\\main\\resources\\test-image.png.png";
+
+		// Load and display the image
+		Mat image = Imgcodecs.imread(imagePath);
+		if (image.empty()) {
+			System.err.println("Error: Could not load image.");
+			return;
+		}
+		HighGui.imshow("Test Image", image);
+		HighGui.waitKey(0);
 
 		// Path to Tesseract installation
 		File imageFile = new File(imagePath);
@@ -23,24 +39,3 @@ public class PdfToolApplication {
 		}
 	}
 }
-
-
-
-/*
-package com.USL.PDF_Tool;
-
-
-import org.springframework.boot.SpringApplication;
-import org.springframework.boot.autoconfigure.SpringBootApplication;
-
-@SpringBootApplication
-public class PdfToolApplication {
-
-	public static void main(String[] args) {
-
-		SpringApplication.run(PdfToolApplication.class, args);
-
-	}
-
-}
-*/
