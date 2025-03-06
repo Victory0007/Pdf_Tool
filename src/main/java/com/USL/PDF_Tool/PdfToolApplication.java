@@ -7,15 +7,25 @@ import org.opencv.core.Size;
 import org.opencv.imgcodecs.Imgcodecs;
 import org.opencv.imgproc.Imgproc;
 import org.opencv.highgui.HighGui;
+import dev.langchain4j.model.ollama.OllamaChatModel;
 
 import java.io.File;
 
 public class PdfToolApplication {
 	public static void main(String[] args) {
+
+		OllamaChatModel model = OllamaChatModel.builder()
+				.baseUrl("http://localhost:11434") // Default Ollama server
+				.modelName("llama3.1") // Correct model specification
+				.build();
+
+		String response = model.generate("What is the capital of Nigeria?");
+		System.out.println("Llama 3.1 says: " + response);
+		/*
 		// Load OpenCV library
 		System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
 
-		String imagePath = "C:\\Users\\Dev Mode\\IdeaProjects\\PDF_Tool\\src\\main\\resources\\test-image.png.png";
+		String imagePath = "C:\\Users\\Dev Mode\\IdeaProjects\\PDF_Tool\\src\\main\\resources\\test-image.png";
 
 		// Load the image
 		Mat image = Imgcodecs.imread(imagePath);
@@ -34,6 +44,7 @@ public class PdfToolApplication {
 		// Imgproc.GaussianBlur(grayImage, blurredImage, new Size(5, 5), 0);
 
 		// Apply Otsu's binarization
+		// I should have used adaptive threshold here
 		Mat binaryImage = new Mat();
 		Imgproc.threshold(grayImage, binaryImage, 0, 255, Imgproc.THRESH_BINARY + Imgproc.THRESH_OTSU);
 
@@ -68,5 +79,7 @@ public class PdfToolApplication {
 		} catch (TesseractException e) {
 			System.err.println("Error: " + e.getMessage());
 		}
+
+		 */
 	}
 }
