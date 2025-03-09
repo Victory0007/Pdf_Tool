@@ -25,6 +25,7 @@ public class VectorDBService {
     public void processDocument(String filePath) {
         try {
             String extractedText = textExtractorService.extractText(filePath);
+            // System.out.println(extractedText);
             if (extractedText.startsWith("Error")) {
                 System.err.println(extractedText);
                 return;
@@ -43,6 +44,10 @@ public class VectorDBService {
             }
 
             List<List<Double>> embeddings = generateEmbeddings(chunks);
+            System.out.println("Collection ID: " + collectionId);
+            // System.out.println("Chunks: " + chunks);
+            // System.out.println("IDs: " + ids);
+            // System.out.println("Embeddings: " + embeddings);
             addDocuments(collectionId, chunks, ids, embeddings);
             queryCollection(collectionId, "Relevant query here");
 
@@ -99,6 +104,7 @@ public class VectorDBService {
                 embeddings.add(embedding);
             }
         }
+        // System.out.println("Generated Embeddings: " + embeddings);
         return embeddings;
     }
 
@@ -115,7 +121,10 @@ public class VectorDBService {
             metadatas.put(metadata);
         }
         payload.put("metadatas", metadatas);
+        // System.out.println(payload.toString());
         sendPostRequest(url, payload.toString());
+        // String response = sendPostRequest(url, payload.toString()); // Capture response
+        // System.out.println("Add Documents Response: " + response); // Debugging
     }
 
     private void queryCollection(String collectionId, String queryText) throws IOException {
@@ -131,13 +140,16 @@ public class VectorDBService {
     }
 
     private String sendPostRequest(String url, String jsonPayload) throws IOException {
+       // System.out.println(url);
         HttpURLConnection conn = (HttpURLConnection) new URL(url).openConnection();
         conn.setRequestMethod("POST");
         conn.setRequestProperty("Content-Type", "application/json");
         conn.setDoOutput(true);
         try (OutputStream os = conn.getOutputStream()) {
+            // System.out.println(jsonPayload.getBytes(StandardCharsets.UTF_8));
             os.write(jsonPayload.getBytes(StandardCharsets.UTF_8));
         }
+        //System.out.println(handleHttpResponse(conn));
         return handleHttpResponse(conn);
     }
 
@@ -150,6 +162,7 @@ public class VectorDBService {
 
     private String handleHttpResponse(HttpURLConnection conn) throws IOException {
         int responseCode = conn.getResponseCode();
+        // System.out.println("HTTP Response Code: " + responseCode);
         if (responseCode == HttpURLConnection.HTTP_OK || responseCode == HttpURLConnection.HTTP_CREATED) {
             try (BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), StandardCharsets.UTF_8))) {
                 StringBuilder response = new StringBuilder();
@@ -157,10 +170,12 @@ public class VectorDBService {
                 while ((line = br.readLine()) != null) {
                     response.append(line.trim());
                 }
+                // System.out.println(response.toString());
                 return response.toString();
             }
         } else {
             return "{}";
         }
     }
+
 }
