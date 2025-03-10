@@ -1,33 +1,17 @@
 package com.USL.PDF_Tool;
 
-import com.USL.PDF_Tool.service.ImageToTextService;
-import com.USL.PDF_Tool.service.TextExtractorService;
-import com.USL.PDF_Tool.service.VectorDBService;
 import com.USL.PDF_Tool.service.RAGService;
-
-import java.io.IOException;
+import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+import org.springframework.context.ApplicationContext;
 
 public class PdfToolApplication {
-	public static void main(String[] args) throws IOException {
-		// Initialize required services
-		ImageToTextService imageToTextService = new ImageToTextService();
-		TextExtractorService textExtractorService = new TextExtractorService(imageToTextService);
-		VectorDBService vectorDBService = new VectorDBService(textExtractorService);
-		RAGService ragService = new RAGService(); // Initialize RAG service
+	public static void main(String[] args) {
+		ApplicationContext context = new AnnotationConfigApplicationContext("com.USL.PDF_Tool.service");
 
-		String filePath = "C:\\Users\\Dev Mode\\Downloads\\Kachasi-brochure.pdf";
+		RAGService ragService = context.getBean(RAGService.class);
+		ragService.processDocument("C:\\Users\\Dev Mode\\Downloads\\kachasi-brochure.pdf");
 
-		// Step 1: Process the document (extract and store embeddings)
-		System.out.println("Extracting text and processing document...");
-		vectorDBService.processDocument(filePath);
-		System.out.println("Processing completed.");
-
-		// Step 2: Query the RAG system
-		String question = "What is Kachasi?";
-		System.out.println("Querying the RAG system...");
-		String answer = ragService.getAnswer(question);
-
-		// Step 3: Display the answer
-		System.out.println("Answer: " + answer);
+		String response = ragService.queryRAG("What is kachasi?");
+		System.out.println("Response: " + response);
 	}
 }
