@@ -1,17 +1,16 @@
 package com.USL.PDF_Tool;
 
+import com.USL.PDF_Tool.controller.DocumentController;
+import com.USL.PDF_Tool.service.ImageToTextService;
 import com.USL.PDF_Tool.service.RAGService;
-import org.springframework.context.annotation.AnnotationConfigApplicationContext;
+import com.USL.PDF_Tool.service.TextExtractorService;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ApplicationContext;
 
+@SpringBootApplication
 public class PdfToolApplication {
 	public static void main(String[] args) {
-		ApplicationContext context = new AnnotationConfigApplicationContext("com.USL.PDF_Tool.service");
-
-		RAGService ragService = context.getBean(RAGService.class);
-		ragService.processDocument("C:\\Users\\Dev Mode\\Downloads\\kachasi-brochure.pdf");
-
-		String response = ragService.queryRAG("What is kachasi?");
-		System.out.println("Response: " + response);
+		SpringApplication.run(PdfToolApplication.class, args);
 	}
 }
