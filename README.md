@@ -9,7 +9,6 @@ PDF Tool is a Spring Boot-based backend application designed for processing and 
 - 🧠 Retrieval-Augmented Generation (RAG) integration
 - 🧾 OCR support for image-to-text conversion
 - 🧠 Vector database service for intelligent querying
-- 🧪 Basic unit tests for application components
 
 ## 📁 Project Structure
 
