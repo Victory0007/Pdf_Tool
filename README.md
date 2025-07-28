@@ -69,14 +69,6 @@ cd Pdf_Tool-main
 
 The server should start on `http://localhost:8080`.
 
-## 🔬 Running Tests
-
-Run unit tests using:
-
-```bash
-./mvnw test
-```
-
 ## 📦 API Overview
 
 The backend exposes a controller named `DocumentController` where image and PDF processing routes are handled. You can extend the controller or refer to it to understand how to integrate with the services.
