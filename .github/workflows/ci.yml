@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - main
-      - mila-credibility-improvements
+      - chore/maintenance
   pull_request:
     branches:
       - main
