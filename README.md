@@ -1,86 +1,149 @@
+# PDF Tool
 
-# 📄 PDF Tool
+A Spring Boot backend for extracting text from PDFs and images, indexing text in ChromaDB, and answering questions over indexed content with a local Ollama model.
 
-PDF Tool is a Spring Boot-based backend application designed for processing and analyzing PDF documents and images. It supports functionality such as image-to-text conversion, text extraction, Retrieval-Augmented Generation (RAG), and vector database operations.
+## What it does
 
-## 🚀 Features
+- Extracts embedded text from text-based PDF files with Apache PDFBox.
+- Runs OCR on PNG and JPEG images using OpenCV preprocessing and Tesseract.
+- Splits extracted text into overlapping chunks and generates embeddings with Ollama.
+- Stores document chunks in ChromaDB.
+- Retrieves relevant chunks and passes them to an Ollama chat model to generate an answer.
 
-- 📄 Extract text from PDF documents and images
-- 🧠 Retrieval-Augmented Generation (RAG) integration
-- 🧾 OCR support for image-to-text conversion
-- 🧠 Vector database service for intelligent querying
+**Current limitation:** scanned PDFs do not yet go through OCR. PDF extraction currently reads the PDF text layer. Image OCR is supported for standalone PNG/JPEG uploads.
 
-## 📁 Project Structure
+## Architecture
 
-```
-Pdf_Tool-main/
-├── src/
-│   ├── main/
-│   │   ├── java/com/USL/PDF_Tool/
-│   │   │   ├── PdfToolApplication.java
-│   │   │   ├── controller/
-│   │   │   │   └── DocumentController.java
-│   │   │   └── service/
-│   │   │       ├── ImageToTextService.java
-│   │   │       ├── RAGService.java
-│   │   │       ├── TextExtractorService.java
-│   │   │       └── VectorDBService.java
-│   │   └── resources/
-│   │       ├── application.properties
-│   │       ├── processed-image.png
-│   │       ├── test-image.png
-│   │       ├── test-image2.png
-│   │       └── test-image3.jpg
-│   └── test/
-│       └── java/com/USL/PDF_Tool/
-│           └── PdfToolApplicationTests.java
-├── pom.xml
-├── mvnw / mvnw.cmd
-├── .gitignore
-└── .gitattributes
+```mermaid
+flowchart TD
+    A[Client] -->|multipart PDF or image| B[DocumentController]
+    B --> C[TextExtractorService]
+    C -->|PDF text| D[Chunking and Embeddings]
+    C -->|PNG/JPEG| E[ImageToTextService]
+    E --> D
+    D -->|embedding requests| F[Ollama]
+    D -->|upsert chunks and vectors| G[ChromaDB]
+    A -->|question| B
+    B --> H[RAGService]
+    H -->|query embedding| F
+    H -->|similarity search| G
+    H -->|retrieved context| I[Ollama chat model]
+    I -->|answer| A
 ```
 
-## 🛠️ Prerequisites
+## Technology
 
-- **Java 17+**
-- **Maven 3.x**
-- An IDE like IntelliJ IDEA or VSCode
+- Java 21 and Spring Boot 3.4.3
+- Apache PDFBox for PDF text extraction
+- OpenCV and Tess4J/Tesseract for image OCR
+- Ollama for embeddings and chat completion
+- ChromaDB for vector storage
+- Maven for dependency and build management
 
-## 🧪 Getting Started
+## Prerequisites
 
-### 1. Clone the Repository
+- JDK 21
+- Docker and Docker Compose (for ChromaDB and Ollama)
+- Tesseract OCR installed locally, including its English language data
+- OpenCV native library available to the Java runtime
+
+The OpenCV Java dependency is included in Maven. Native library loading is platform-dependent; if the application cannot load OpenCV, install/configure the matching native library for your operating system.
+
+## Run locally
+
+### 1. Clone and enter the repository
 
 ```bash
-git clone https://github.com/your-username/Pdf_Tool-main.git
-cd Pdf_Tool-main
+git clone https://github.com/Victory0007/Pdf_Tool.git
+cd Pdf_Tool
 ```
 
-### 2. Build the Application
+### 2. Start Ollama and ChromaDB
 
 ```bash
-./mvnw clean install
+docker compose up -d
 ```
 
-### 3. Run the Application
+Pull the models used by the default configuration:
 
 ```bash
+docker exec -it pdf-tool-ollama ollama pull llama3.1
+docker exec -it pdf-tool-ollama ollama pull nomic-embed-text
+```
+
+The first model is used for answer generation; the second generates document and query embeddings.
+
+### 3. Configure OCR
+
+Install Tesseract and ensure its English language data is available. If Tesseract cannot locate its data automatically, set `TESSDATA_PATH` to the directory containing the `eng.traineddata` file.
+
+### 4. Build and run
+
+```bash
+./mvnw clean test
 ./mvnw spring-boot:run
 ```
 
-The server should start on `http://localhost:8080`.
+The API listens on `http://localhost:8080`.
 
-## 📦 API Overview
+## API
 
-The backend exposes a controller named `DocumentController` where image and PDF processing routes are handled. You can extend the controller or refer to it to understand how to integrate with the services.
+### Ingest a document
 
-## 📂 Configuration
+`POST /pdfTool/documents`
 
-Edit `src/main/resources/application.properties` to configure app behavior, including file paths and database endpoints if applicable.
+Content type: `multipart/form-data`
 
-## 🧠 About the Services
+Form field: `file`
 
-- `ImageToTextService`: Converts images to text using OCR.
-- `TextExtractorService`: Extracts raw text content from documents.
-- `VectorDBService`: Indexes and retrieves documents based on vector embeddings.
-- `RAGService`: Facilitates RAG pipeline for intelligent document querying.
+Supported extensions: `.pdf`, `.png`, `.jpg`, `.jpeg`.
 
+Example:
+
+```bash
+curl -X POST http://localhost:8080/pdfTool/documents \
+  -F "file=@./sample.pdf"
+```
+
+The endpoint extracts and indexes the document before returning a success response. Ingestion requires Ollama and ChromaDB to be running.
+
+### Ask a question
+
+`POST /pdfTool/query`
+
+Content type: `text/plain`
+
+Body: the question to ask about indexed documents.
+
+Example:
+
+```bash
+curl -X POST http://localhost:8080/pdfTool/query \
+  -H "Content-Type: text/plain" \
+  --data "What are the main points in the document?"
+```
+
+The query endpoint searches the existing knowledge base; it does not re-ingest a document.
+
+## Configuration
+
+Defaults are defined in `src/main/resources/application.properties`. Override them with environment variables:
+
+| Variable | Default | Purpose |
+|---|---|---|
+| `CHROMA_URL` | `http://localhost:8000` | ChromaDB base URL |
+| `OLLAMA_URL` | `http://localhost:11434` | Ollama base URL |
+| `OLLAMA_CHAT_MODEL` | `llama3.1` | Chat model |
+| `OLLAMA_EMBEDDING_MODEL` | `nomic-embed-text` | Embedding model |
+| `OLLAMA_TIMEOUT` | `PT5M` | Chat request timeout |
+| `TESSDATA_PATH` | Tesseract default | Optional Tesseract data directory |
+
+## Tests
+
+Run the automated test suite with:
+
+```bash
+./mvnw test
+```
+
+The unit tests cover text chunking, chunk configuration validation, supported image extension routing, missing files, and unsupported file types. Tests do not require a running Ollama or ChromaDB instance.
