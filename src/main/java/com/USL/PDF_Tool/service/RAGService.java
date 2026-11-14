@@ -2,7 +2,7 @@ package com.USL.PDF_Tool.service;
 
 import dev.langchain4j.model.ollama.OllamaChatModel;
 import dev.langchain4j.model.chat.ChatLanguageModel;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -10,43 +10,56 @@ import java.util.List;
 
 @Service
 public class RAGService extends VectorDBService {
+
     private final ChatLanguageModel llm;
 
-    @Autowired
-    public RAGService(TextExtractorService textExtractorService) {
+    public RAGService(
+            TextExtractorService textExtractorService,
+            @Value("${pdf-tool.ollama.base-url:http://localhost:11434}") String ollamaBaseUrl,
+            @Value("${pdf-tool.ollama.chat-model:llama3.1}") String chatModel,
+            @Value("${pdf-tool.ollama.timeout:PT5M}") java.time.Duration timeout) {
         super(textExtractorService);
         this.llm = OllamaChatModel.builder()
-                .baseUrl("http://localhost:11434")
-                .modelName("llama3.1")
-                .timeout(java.time.Duration.ofMinutes(50))
+                .baseUrl(ollamaBaseUrl)
+                .modelName(chatModel)
+                .timeout(timeout)
                 .build();
     }
 
     public String queryRAG(String queryText) {
         try {
-            String collectionName = "knowledge-base";
-            String collectionId = getCollectionId(collectionName);
+            String collectionId = getCollectionId("knowledge-base");
             if (collectionId == null) {
-                return "Error: Collection not found.";
+                throw new IllegalStateException(
+                        "The knowledge base does not exist. Ingest a document before querying.");
             }
 
             List<String> retrievedDocs = queryCollection(collectionId, queryText);
             if (retrievedDocs.isEmpty()) {
-                return "No relevant documents found.";
+                return "No relevant document passages were found.";
             }
 
-            String context = String.join("\n", retrievedDocs);
+            String context = String.join("\n\n", retrievedDocs);
             return generateResponse(queryText, context);
-        } catch (IOException e) {
-            e.printStackTrace();
-            return "Error processing query.";
+        } catch (IOException exception) {
+            throw new IllegalStateException("Could not retrieve context from the vector database.", exception);
         }
     }
 
     private String generateResponse(String queryText, String context) {
-        String prompt = "You are an AI assistant. Use the following context to answer the question.\n\n" +
-                "Context: " + context + "\n\n" +
-                "Question: " + queryText + "\n\nAnswer:";
+        String prompt = """
+                You are an assistant answering questions about ingested documents.
+                Answer using only the context below. If the context does not contain
+                the answer, say that the documents do not provide enough information.
+
+                Context:
+                %s
+
+                Question:
+                %s
+
+                Answer:
+                """.formatted(context, queryText);
         return llm.generate(prompt);
     }
 }
