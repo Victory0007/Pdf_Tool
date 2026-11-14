@@ -73,7 +73,12 @@ public class VectorDBService {
 
         int step = chunkSize - overlap;
         for (int start = 0; start < text.length(); start += step) {
-            chunks.add(text.substring(start, Math.min(start + chunkSize, text.length())));
+            int end = Math.min(start + chunkSize, text.length());
+            chunks.add(text.substring(start, end));
+            // The current chunk already reaches the end of the input.
+            if (end == text.length()) {
+                break;
+            }
         }
         return chunks;
     }
