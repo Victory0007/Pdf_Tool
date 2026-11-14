@@ -2,7 +2,7 @@ package com.USL.PDF_Tool.service;
 
 import net.sourceforge.tess4j.Tesseract;
 import net.sourceforge.tess4j.TesseractException;
-import org.opencv.core.Core;
+import nu.pattern.OpenCV;
 import org.opencv.core.Mat;
 import org.opencv.core.Size;
 import org.opencv.imgcodecs.Imgcodecs;
@@ -18,14 +18,13 @@ import java.nio.file.Path;
 @Service
 public class ImageToTextService {
 
-    static {
-        System.loadLibrary(Core.NATIVE_LIBRARY_NAME);
-    }
+    private static volatile boolean openCvLoaded;
 
     @Value("${pdf-tool.ocr.tessdata-path:}")
     private String tessdataPath;
 
     public String imageToText(String imagePath) {
+        ensureOpenCvLoaded();
         Mat image = Imgcodecs.imread(imagePath);
         if (image.empty()) {
             image.release();
@@ -68,6 +67,13 @@ public class ImageToTextService {
                     // Temporary-file cleanup should not hide the OCR result.
                 }
             }
+        }
+    }
+
+    private static synchronized void ensureOpenCvLoaded() {
+        if (!openCvLoaded) {
+            OpenCV.loadLocally();
+            openCvLoaded = true;
         }
     }
 
