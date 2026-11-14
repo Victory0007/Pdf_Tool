@@ -147,7 +147,3 @@ Run the automated test suite with:
 ```
 
 The unit tests cover text chunking, chunk configuration validation, supported image extension routing, missing files, and unsupported file types. Tests do not require a running Ollama or ChromaDB instance.
-
-## Current scope and next improvements
-
-This project currently uses a single shared ChromaDB collection named `knowledge-base`. It does not yet provide per-user or per-document access control, document deletion, source-page citations, or OCR fallback for scanned PDFs. Those are separate capabilities that would need to be designed and tested before using the service with sensitive or multi-user data.
